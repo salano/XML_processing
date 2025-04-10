@@ -1,0 +1,84 @@
+use AdventureWorks
+GO
+
+
+SELECT 
+	BusinessEntityID,
+	PersonType,
+	Title,
+	FirstName,
+	MiddleName,
+	LastName
+INTO    demo.Person
+FROM    Person.Person as Person;
+
+select * from demo.Person;
+truncate table demo.Person;
+
+insert into demo.Person (
+						BusinessEntityID,
+						PersonType,
+						Title,
+						FirstName,
+						MiddleName,
+						LastName
+						)
+select 
+	P_XML.record.query('BusinessEntityID').value('.','INT'),
+	P_XML.record.query('PersonType').value('.','VARCHAR(10)'),
+	P_XML.record.query('FirstName').value('.','VARCHAR(50)'),
+	P_XML.record.query('MiddleName').value('.','VARCHAR(50)'),
+	P_XML.record.query('LastName').value('.','VARCHAR(50)')
+FROM
+	(select CAST(P_XML as XML)
+	FROM OPENROWSET(BULK 'D:\XML\XML_Person_export.xml', SINGLE_BLOB) as T(P_XML)) AS T(P_XML)
+	CROSS APPLY P_XML.nodes('Persons/Person') AS P_XML (record);
+
+
+
+select 
+    TOP (50)
+	BusinessEntityID,
+	PersonType,
+	Title,
+	FirstName,
+	MiddleName,
+	LastName
+from 
+	Person.Person as Person
+FOR XML AUTO, ELEMENTS, ROOT('Persons');
+
+--Use XML data in variable
+
+DECLARE @data_xml XML =
+	(
+		select 
+			* 
+		from 
+			Person.Person as Person
+		FOR XML AUTO, ELEMENTS, ROOT('Persons')
+	)
+	--Firstname of the first person from the Persons node
+select 
+	@data_xml.value('Persons[1]/Person[1]/FirstName[1]','varchar(50)') as FirstName,
+	LastName = @data_xml.value('Persons[1]/Person[1]/LastName[1]','varchar(50)') 
+
+
+--Pull all persons from ML variable
+
+DECLARE @data_xml XML =
+	(
+		select 
+			* 
+		from 
+			Person.Person as Person
+		FOR XML AUTO, ELEMENTS, ROOT('Persons')
+	)
+
+select 
+	FirstName = item.row.value('FirstName[1]','varchar(50)'),
+	LastName = item.row.value('LastName[1]','varchar(50)'),
+	EmailPromotion = item.row.value('EmailPromotion[1]','varchar(2)')
+from 
+	@data_xml.nodes('Persons/Person') item(row)
+	
