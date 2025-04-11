@@ -40,7 +40,7 @@ FROM
 	CROSS APPLY P_XML.nodes('Persons/Person') AS P_XML (record);
 ```
 
-There is Python code to process the downloaded XML file. Two module options are used to process the file:
+There is Python code to process the downloaded XML file. Two modules are used to process the file:
 
 1. Simple API for XML – Method
 2. Document Object Model
